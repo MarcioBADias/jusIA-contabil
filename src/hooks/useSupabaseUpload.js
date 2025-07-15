@@ -1,4 +1,4 @@
-// src/hooks/useSupabaseUpload.js - Este código está bom como está.
+// src/hooks/useSupabaseUpload.js
 import { useReducer, useCallback } from 'react'
 import { supabase } from '../api/supabaseCLient'
 import { initialUploadState, uploadReducer } from '../reducers/uploadReducer'
@@ -16,7 +16,7 @@ export function useSupabaseUpload() {
     }
 
     dispatch({ type: 'SET_UPLOADING', payload: true })
-    dispatch({ type: 'SET_UPLOAD_PROGRESS', payload: 0 }) // Este agora será tratado no reducer
+    dispatch({ type: 'SET_UPLOAD_PROGRESS', payload: 0 })
 
     try {
       const fileExtension = file.name.split('.').pop()
@@ -24,7 +24,7 @@ export function useSupabaseUpload() {
 
       // --- 1. Upload do arquivo para o Supabase Storage ---
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('document-uploads')
+        .from('document-uploads') // Confirme que este é o nome do seu bucket no Supabase
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -46,9 +46,10 @@ export function useSupabaseUpload() {
 
       const fileUrl = publicUrlData.publicUrl
 
-      // --- 2. Salvar a URL e metadados no Supabase Database (tabela 'documents') ---
+      // --- 2. Salvar a URL e metadados no Supabase Database (tabela 'files') ---
+      // CORRIGIDO: Usando 'files' como o nome da tabela
       const { data: fileRecord, error: dbError } = await supabase
-        .from('documents') // Verifique se o nome da tabela é 'documents' ou 'files'
+        .from('files') // <--- CORRIGIDO AQUI: De 'documents' para 'files'
         .insert({
           user_id: userId,
           file_name: file.name,
@@ -101,7 +102,7 @@ export function useSupabaseUpload() {
       return fileRecord
     } catch (error) {
       console.error('Erro completo no processo de upload:', error)
-      dispatch({ type: 'UPLOAD_FAIL', payload: error.message }) // Este agora será tratado no reducer
+      dispatch({ type: 'UPLOAD_FAIL', payload: error.message })
       return null
     }
   }, [])
