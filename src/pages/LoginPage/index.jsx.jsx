@@ -3,27 +3,40 @@ import { useNavigate } from 'react-router-dom'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 
 export function LoginPage() {
-  const [email, setEmail] = useState('') // Estado local para os campos do formulário
-  const [password, setPassword] = useState('') // Estado local para os campos do formulário
-  const { user, loading, error, signIn } = useSupabaseAuth() // Use o hook personalizado de auth
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isRegistering, setIsRegistering] = useState(false)
+
+  const { user, loading, error, signIn, signUp } = useSupabaseAuth()
   const navigate = useNavigate()
 
-  // Efeito para redirecionar o usuário se já estiver logado
   useEffect(() => {
     if (user) {
-      navigate('/upload') // Redireciona para a página de upload após o login
+      navigate('/upload')
     }
   }, [user, navigate])
 
-  const handleLogin = async (e) => {
-    e.preventDefault() // Evita o recarregamento da página
-    const { error: signInError } = await signIn(email, password)
-    if (signInError) {
-      // O erro já é tratado e armazenado no estado do hook, mas você pode adicionar feedback visual aqui
-      console.error('Erro ao fazer login:', signInError)
-      alert(`Erro ao fazer login: ${signInError}`) // Exemplo simples de feedback
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (isRegistering) {
+      // Lógica de Cadastro
+      const { error: signUpError } = await signUp(email, password)
+      if (signUpError) {
+        console.error('Erro ao cadastrar:', signUpError.message)
+        alert(`Erro ao cadastrar: ${signUpError.message}`)
+      } else {
+        alert('Cadastro realizado com sucesso! Você já está logado.')
+        // O redirecionamento acontece via useEffect
+      }
+    } else {
+      // Lógica de Login
+      const { error: signInError } = await signIn(email, password)
+      if (signInError) {
+        console.error('Erro ao fazer login:', signInError.message)
+        alert(`Erro ao fazer login: ${signInError.message}`)
+      }
+      // O redirecionamento acontece via useEffect
     }
-    // O redirecionamento é tratado no useEffect
   }
 
   return (
@@ -47,9 +60,9 @@ export function LoginPage() {
           textAlign: 'center',
         }}
       >
-        <h1>Login JusIA Contábil</h1>
+        <h1>{isRegistering ? 'Cadastre-se' : 'Login'} JusIA Contábil</h1>
         <form
-          onSubmit={handleLogin}
+          onSubmit={handleSubmit}
           style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}
         >
           <input
@@ -91,16 +104,45 @@ export function LoginPage() {
               cursor: loading ? 'not-allowed' : 'pointer',
             }}
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading
+              ? isRegistering
+                ? 'Cadastrando...'
+                : 'Entrando...'
+              : isRegistering
+                ? 'Cadastrar'
+                : 'Entrar'}
           </button>
         </form>
-        {error && <p style={{ color: 'red', marginTop: '15px' }}>{error}</p>}
+        {error && (
+          <p style={{ color: 'red', marginTop: '15px' }}>
+            {error.message || error}
+          </p>
+        )}{' '}
+        {/* Certifique-se que 'error' tem 'message' */}
         <p style={{ marginTop: '20px', fontSize: '14px', color: '#555' }}>
-          Novo por aqui?{' '}
-          <a href="#" style={{ color: '#007bff', textDecoration: 'none' }}>
-            Registre-se
-          </a>{' '}
-          (funcionalidade futura).
+          {isRegistering ? (
+            <>
+              Já tem uma conta?{' '}
+              <a
+                href="#"
+                onClick={() => setIsRegistering(false)}
+                style={{ color: '#007bff', textDecoration: 'none' }}
+              >
+                Faça Login
+              </a>
+            </>
+          ) : (
+            <>
+              Novo por aqui?{' '}
+              <a
+                href="#"
+                onClick={() => setIsRegistering(true)}
+                style={{ color: '#007bff', textDecoration: 'none' }}
+              >
+                Cadastre-se
+              </a>
+            </>
+          )}
         </p>
       </div>
     </div>

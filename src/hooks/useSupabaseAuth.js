@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react'
-import { authReducer, initialAuthState } from '../reducers/authReducer' // Importação nomeada
+import { authReducer, initialAuthState } from '../reducers/authReducer'
 import { supabase } from '../api/supabaseCLient'
 
 export function useSupabaseAuth() {
@@ -14,25 +14,40 @@ export function useSupabaseAuth() {
       })
       if (error) throw error
       dispatch({ type: 'LOGIN_SUCCESS', payload: data.user })
-      return data
+      return { data, error: null }
     } catch (error) {
       dispatch({ type: 'LOGIN_FAIL', payload: error.message })
-      return { error }
+      return { data: null, error }
+    }
+  }, [])
+
+  // Nova função para cadastro
+  const signUp = useCallback(async (email, password) => {
+    dispatch({ type: 'LOGIN_START' }) // Reutilizamos o estado de "loading"
+    try {
+      // O Supabase automaticamente loga o usuário após o cadastro bem-sucedido
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
+      dispatch({ type: 'LOGIN_SUCCESS', payload: data.user })
+      return { data, error: null }
+    } catch (error) {
+      dispatch({ type: 'LOGIN_FAIL', payload: error.message })
+      return { data: null, error }
     }
   }, [])
 
   const signOut = useCallback(async () => {
-    dispatch({ type: 'LOGIN_START' }) // Usar START como um "loading" para logout também
+    dispatch({ type: 'LOGIN_START' })
     try {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       dispatch({ type: 'LOGOUT' })
-      return { success: true }
+      return { success: true, error: null }
     } catch (error) {
-      dispatch({ type: 'LOGIN_FAIL', payload: error.message }) // Reusar FAIL para erros no logout
-      return { error }
+      dispatch({ type: 'LOGIN_FAIL', payload: error.message })
+      return { success: false, error }
     }
   }, [])
 
-  return { ...state, signIn, signOut }
+  return { ...state, signIn, signUp, signOut } // Adiciona signUp ao retorno do hook
 }
